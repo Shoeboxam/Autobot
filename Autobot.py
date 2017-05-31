@@ -14,17 +14,17 @@ import serial
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BOARD)
 
-pin = {'button':            27,
-       'light_left':        17,
-       'light_right':       18,
-       'ultra_fr_trigger':  5,
-       'ultra_fr_echo':     6,
-       'ultra_fl_trigger':  12,
-       'ultra_fl_echo':     13,
-       'ultra_br_trigger':  16,
-       'ultra_br_echo':     19,
-       'ultra_bl_trigger':  20,
-       'ultra_bl_echo':     21}
+pin = {'button':            13,
+       'light_left':        11,
+       'light_right':       12,
+       'ultra_fr_trigger':  29,
+       'ultra_fr_echo':     31,
+       'ultra_fl_trigger':  32,
+       'ultra_fl_echo':     33,
+       'ultra_br_trigger':  36,
+       'ultra_br_echo':     35,
+       'ultra_bl_trigger':  38,
+       'ultra_bl_echo':     40}
 
 
 # BUTTON
@@ -79,7 +79,7 @@ keys = ['fl', 'fr', 'bl', 'br']
 # Front left, front right, back left, back right
 
 for key in keys:
-    GPIO.setup(pin['ultra_' + key + '_trigger'], GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(pin['ultra_' + key + '_trigger'], GPIO.OUT)
     GPIO.setup(pin['ultra_' + key + '_echo'], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 
