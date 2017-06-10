@@ -30,7 +30,8 @@ def tag_match(tags, keys):
         locations = []
         for tag in tags:
             for keyval in keys:
-                if tag in keyval and keyval not in locations:
+                print(str(tag) + ' : ' + str(keyval))
+                if tag == keyval and keyval not in locations:
                     locations.append(keyval)
         return locations
 
