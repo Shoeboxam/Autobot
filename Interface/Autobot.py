@@ -30,8 +30,18 @@ def on_press(channel):
     GPIO.remove_event_detect(channel)
     code_refresh()
 
+
+# Simple demo for running motors
+def on_press_m(channel):
+    set_speed(255, 'all', 'forward')
+
+
+def on_depress_m(channel):
+    set_speed(0, 'all')
+
 GPIO.setup(pin['button'], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.add_event_detect(pin['button'], GPIO.RISING, callback=on_press, bouncetime=300)
+GPIO.add_event_detect(pin['button'], GPIO.RISING, callback=on_press_m, bouncetime=300)
+GPIO.add_event_detect(pin['button'], GPIO.FALLING, callback=on_depress_m, bouncetime=300)
 
 
 # LIGHT SENSOR
@@ -135,7 +145,7 @@ motors = {'fl': mh.getMotor(0),
 def set_speed(speed, tags='all', direction='forward'):
     locations = tag_match(tags, motor_keys)
 
-    speed = arg_match(speed, locations)
+    speed_list = arg_match(speed, locations)
     direction = arg_match(direction, locations)
 
     # Change type of direction from string to directional type
@@ -147,10 +157,10 @@ def set_speed(speed, tags='all', direction='forward'):
 
     # Set the motors!
     for count, loc in enumerate(locations):
-        if speed[count] == 0:
+        if speed_list[count] == 0:
             motors[loc].run(Adafruit_MotorHAT.RELEASE)
         else:
-            motors[loc].setSpeed(speed[count])
+            motors[loc].setSpeed(speed_list[count])
             motors[loc].run(direction[count])
 
 atexit.register(set_speed, speed=0)
