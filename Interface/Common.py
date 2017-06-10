@@ -1,6 +1,13 @@
 import subprocess
 import os
 import sys
+import time
+
+time = time.time()
+location = [0.0, 0.0, 0.0]  # x / y / z
+velocity = [0.0, 0.0, 0.0]  # x / y / z
+accelera = [0.0, 0.0, 0.0]  # x / y / z
+attitude = [0.0, 0.0, 0.0]  # yaw / pitch / roll
 
 
 def code_refresh():
@@ -40,19 +47,8 @@ def arg_match(args, keys):
 
 
 # LIGHT SENSOR
-class CircularList:
-    def __init__(self, length):
-        self.cache = [None] * length
-        self.length = length
-        self.pointer = 0
-
-    def set(self, data):
-        self.cache[self.pointer] = data
-        self.pointer = (self.pointer + 1) % self.length
-
-light_cache_memory = 2**4
-light_cache_left = CircularList(light_cache_memory)
-light_cache_right = CircularList(light_cache_memory)
+light_spokes_left = 0
+light_spokes_right = 0
 
 
 # ULTRASONIC SENSORS
