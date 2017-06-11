@@ -4,10 +4,11 @@ import sys
 import time
 
 time = time.time()
-location = [0.0, 0.0, 0.0]  # x / y / z
-velocity = [0.0, 0.0, 0.0]  # x / y / z
-accelera = [0.0, 0.0, 0.0]  # x / y / z
-attitude = [0.0, 0.0, 0.0]  # yaw / pitch / roll
+location = [0.0, 0.0, 0.0]      # x / y / z
+velocity = [0.0, 0.0, 0.0]      # x / y / z
+acceleration = [0.0, 0.0, 0.0]  # x / y / z
+rotation = [0.0, 0.0, 0.0]      # x / y / z
+orientation = [0.0, 0.0, 0.0]   # yaw / pitch / roll
 
 
 def code_refresh():

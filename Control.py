@@ -14,17 +14,7 @@ interval_control = 0.1
 
 def locate():
     threading.Timer(interval_locate, locate).start()
-    # Wheel circumference: 21 cm
-    # Spokes: 20
-    # 1.05 cm traveled per light trigger
-    distance_right_cm = Env.light_spokes_right * 1.05
-    velocity_right_cm = distance_right_cm / interval_locate
 
-    distance_left_cm = Env.light_spokes_left * 1.05
-    velocity_left_cm = distance_left_cm / interval_locate
-
-    Env.light_spokes_left = 0
-    Env.light_spokes_left = 0
 
     attitude = Env.attitude_poll()
 
