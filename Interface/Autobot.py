@@ -25,24 +25,26 @@ pin = {'button':            13,
        'ultra_bl_trigger':  38,
        'ultra_bl_echo':     40}
 
+stationary = True
+
 
 # BUTTON
 def on_press(channel):
+
+    # Toggle wheels on/off
+    global stationary
+    if stationary:
+        set_speed(255, 'all', 'forward')
+    else:
+        set_speed(0)
+    stationary = not stationary
+
     # Stop detection to prevent multiple reads
-    GPIO.remove_event_detect(channel)
-    code_refresh()
-
-
-# Simple demo for running motors
-def on_press_m(channel):
-    set_speed(255, 'all', 'forward')
-
-
-def on_depress_m(channel):
-    set_speed(0, 'all')
+    # GPIO.remove_event_detect(channel)
+    # code_refresh()
 
 GPIO.setup(pin['button'], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.add_event_detect(pin['button'], GPIO.RISING, callback=on_press_m, bouncetime=300)
+GPIO.add_event_detect(pin['button'], GPIO.RISING, callback=on_press, bouncetime=300)
 
 # LIGHT SENSOR
 light_bouncetime = 100  # Delay to fix fluctuation
@@ -91,10 +93,8 @@ def ultrasonic_detect(tags='all'):
 
 
 # GPS
-ser_gps = serial.Serial('COM6', 9600, timeout=0)
-pynmea2.parse(ser_gps.readline().decode("utf-8"))
-
 gps = {}
+ser_gps = serial.Serial('COM6', 9600, timeout=0)
 
 
 def get_geolocation():
