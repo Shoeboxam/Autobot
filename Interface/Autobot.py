@@ -1,4 +1,4 @@
-from Common import *
+from Interface.Common import *
 import time
 import atexit
 
@@ -7,6 +7,7 @@ import picamera
 import Adafruit_BMP.BMP085 as BMP085
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
 import serial
+import pynmea2
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BOARD)
 
@@ -46,6 +47,7 @@ light_bouncetime = 100  # Delay to fix fluctuation
 
 light_spokes_left = 0
 light_spokes_right = 0
+
 
 def light_spokes_left_increment(channel):
     global light_spokes_left
@@ -87,8 +89,51 @@ def ultrasonic_detect(tags='all'):
 
 
 # GPS
-# https://www.raspberrypi.org/forums/viewtopic.php?f=28&t=56023
+ser_gps = serial.Serial('COM6', 9600, timeout=0)
+pynmea2.parse(ser_gps.readline().decode("utf-8"))
 
+
+def get_gps():
+    gps = {
+        'timestamp': None,
+        'datestamp': None,
+        'latitude':  0,
+        'longitude': 0,
+        'altitude':  0,  # orthometric height
+        'velocity':  0,  # significant error
+        'heading':   0,  # None if velocity is minimal
+        'precision': 0
+    }
+    try:
+        while True:
+            data = ser_gps.readline().decode('UTF-8')
+
+            # Filter fixation data from nmea stream
+            if data.startswith('$GPGGA'):
+                sentence = pynmea2.parse(data)
+
+                # pass when inadequate fixation
+                if int(sentence['num_sats']) < 4:
+                    continue
+
+                # Conditionals correct for hemisphere
+                gps['latitude'] = sentence['lat']
+                if sentence['lat_dir'] == 'S':
+                    gps['latitude'] *= -1
+
+                gps['longitude'] = sentence['lon']
+                if sentence['lon_dir'] == 'W':
+                    gps['longitude'] *= -1
+
+                gps['latitude'] = sentence['altitude']
+
+                # TODO: Pull PDOP from GSA, instead of HDOP from GGA
+                # precision = positional dilution (PDOP) * geoidal separation (GDOP)
+                # gps['precision'] = sentence['horizontal_dil'] * sentence['geo_sep']
+
+    except pynmea2.ParseError:
+        pass
+    return gps
 
 # CAMERA
 camera = picamera.PiCamera()
