@@ -1,5 +1,7 @@
 from Interface.Common import *
 import time
+import datetime
+import threading
 import atexit
 
 # Raspberian dependent
@@ -92,48 +94,72 @@ def ultrasonic_detect(tags='all'):
 ser_gps = serial.Serial('COM6', 9600, timeout=0)
 pynmea2.parse(ser_gps.readline().decode("utf-8"))
 
+gps = {}
 
-def get_gps():
-    gps = {
-        'timestamp': None,
-        'datestamp': None,
-        'latitude':  0,
-        'longitude': 0,
-        'altitude':  0,  # orthometric height
-        'velocity':  0,  # significant error
-        'heading':   0,  # None if velocity is minimal
-        'precision': 0
-    }
+
+def get_geolocation():
+    gps_temp = gps
+    gps.clear()
+    return gps_temp
+
+
+# Update gps records once per second
+def thread_geolocation():
+    threading.Timer(1.0, thread_geolocation).start()
+    utc = 0
+
     try:
         while True:
             data = ser_gps.readline().decode('UTF-8')
 
-            # Filter fixation data from nmea stream
+            # Minimum recommended data
+            if data.startswith('$GPRMC'):
+                sentence = pynmea2.parse(data)
+
+                combined_time = datetime.datetime.combine(sentence['datestamp'], sentence['timestamp'])
+                utc = (combined_time - datetime.datetime.utcfromtimestamp(0)).total_seconds()
+                gps[utc] = {}
+
+            # Velocity made good
+            if data.startswith('$GPVTG'):
+                sentence = pynmea2.parse(data)
+                gps[utc]['velocity'] = sentence['spd_over_grnd_kmph']
+                gps[utc]['heading'] = sentence['true_track']  # True north
+
+            # Fix data
+            geoidal_separation = None
             if data.startswith('$GPGGA'):
                 sentence = pynmea2.parse(data)
 
                 # pass when inadequate fixation
-                if int(sentence['num_sats']) < 4:
-                    continue
+                gps[utc]['num_sats'] = sentence['num_sats']
 
                 # Conditionals correct for hemisphere
-                gps['latitude'] = sentence['lat']
+                gps[utc]['latitude'] = sentence['lat']
                 if sentence['lat_dir'] == 'S':
-                    gps['latitude'] *= -1
+                    gps[utc]['latitude'] *= -1
 
-                gps['longitude'] = sentence['lon']
+                gps[utc]['longitude'] = sentence['lon']
                 if sentence['lon_dir'] == 'W':
                     gps['longitude'] *= -1
 
-                gps['latitude'] = sentence['altitude']
+                gps[utc]['altitude'] = sentence['altitude']
 
-                # TODO: Pull PDOP from GSA, instead of HDOP from GGA
-                # precision = positional dilution (PDOP) * geoidal separation (GDOP)
-                # gps['precision'] = sentence['horizontal_dil'] * sentence['geo_sep']
+                geoidal_separation = sentence['geo_sep']
+
+            # Satellite reception data for precision estimate
+            if data.startswith('$GPGSA'):
+                sentence = pynmea2.parse(data)
+                gps[utc]['precision'] = sentence['PDOP'] * geoidal_separation
+
+                # Filter entry without reception data
+                if gps[utc]['num_sats'] == 0:
+                    del gps[utc]
 
     except pynmea2.ParseError:
         pass
-    return gps
+
+thread_geolocation()
 
 # CAMERA
 camera = picamera.PiCamera()
