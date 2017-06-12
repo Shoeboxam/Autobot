@@ -12,11 +12,13 @@ interval_locate = 1.0
 interval_control = 0.1
 
 
-def locate():
-    threading.Timer(interval_locate, locate).start()
+Env.bluetooth_control()
 
-
-    attitude = Env.attitude_poll()
-
-
-locate()
+# def locate():
+#     threading.Timer(interval_locate, locate).start()
+#
+#
+#     attitude = Env.attitude_poll()
+#
+#
+# locate()

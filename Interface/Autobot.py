@@ -255,18 +255,28 @@ def get_rotation():
 
 
 # BLUETOOTH
-bluetooth_serial = serial.Serial("/dev/rfcomm1", baudrate=9600)
+bluetooth_serial = serial.Serial("COM8", baudrate=57600)
 
 
-def bluetooth_read():
-    data = []
-
+def bluetooth_control():
     while True:
-        data.append(bluetooth_serial.readLine())
-        if not data:
-            break
+        data = bluetooth_serial.readline()
+        data_decoded = memoryview(data).cast('B')
 
-    return data
+        if len(data_decoded) < 2:
+            continue
+
+        vel_x = (+data_decoded[1] - 128) / 2
+        vel_y = (-data_decoded[0] + 128) * 2
+
+        def clamp(n, smallest, largest):
+            return max(smallest, min(n, largest))
+
+        speed_l = clamp(int(vel_y + vel_x), -255, 255)
+        speed_r = clamp(int(vel_y - vel_x), -255, 255)
+
+        set_speed(speed_l, 'l')
+        set_speed(speed_r, 'r')
 
 
 # MOTORS
@@ -277,11 +287,22 @@ motors = {'fl': mh.getMotor(1),
           'br': mh.getMotor(4)}
 
 
-def set_speed(speed, tags='all', direction='forward'):
+def set_speed(speed, tags='all'):
     locations = tag_match(tags, motor_keys)
-
     speed_list = arg_match(speed, locations)
-    direction = arg_match(direction, locations)
+
+    # Convert signed speeds into directions
+    direction = []
+    for ind, speed_ind in enumerate(speed_list):
+        speed_list[ind] = abs(speed_list[ind])
+        if speed_ind == 0:
+            direction.append('release')
+        elif speed_ind < 0:
+            direction.append('backward')
+        else:
+            direction.append('forward')
+
+    # Fix reorientated motor directions
     for index, key in enumerate(locations):
         if key is 'fl' or key is 'fr':
             if direction[index] is 'forward':
@@ -289,7 +310,6 @@ def set_speed(speed, tags='all', direction='forward'):
             else:
                 direction[index] = 'forward'
 
-    print(direction)
     # Change type of direction from string to directional type
     for count, direct in enumerate(direction):
         if 'back' in direct:
@@ -299,7 +319,7 @@ def set_speed(speed, tags='all', direction='forward'):
 
     # Set the motors!
     for count, loc in enumerate(locations):
-        if speed_list[count] == 0:
+        if direction[count] is 'release':
             motors[loc].run(Adafruit_MotorHAT.RELEASE)
         else:
             motors[loc].run(direction[count])
