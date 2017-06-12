@@ -142,7 +142,6 @@ def get_geolocation():
 
 # Update gps records once per second
 def thread_geolocation():
-    threading.Timer(0.5, thread_geolocation).start()
     utc = 0
 
     try:
@@ -153,41 +152,48 @@ def thread_geolocation():
             if data.startswith('$GPRMC'):
                 sentence = pynmea2.parse(data)
 
-                combined_time = datetime.datetime.combine(sentence['datestamp'], sentence['timestamp'])
+                combined_time = datetime.datetime.combine(sentence.datestamp, sentence.timestamp)
                 utc = (combined_time - datetime.datetime.utcfromtimestamp(0)).total_seconds()
+                print(gps)
                 gps[utc] = {}
 
             # Velocity made good
             if data.startswith('$GPVTG'):
                 sentence = pynmea2.parse(data)
-                gps[utc]['velocity'] = sentence['spd_over_grnd_kmph']
-                gps[utc]['heading'] = sentence['true_track']  # True north
+                gps[utc]['velocity'] = sentence.spd_over_grnd_kmph
+                gps[utc]['heading'] = sentence.true_track # True north
 
             # Fix data
             geoidal_separation = None
             if data.startswith('$GPGGA'):
                 sentence = pynmea2.parse(data)
-
-                # pass when inadequate fixation
-                gps[utc]['num_sats'] = sentence['num_sats']
+                
+                gps[utc]['num_sats'] = float(sentence.num_sats)
 
                 # Conditionals correct for hemisphere
-                gps[utc]['latitude'] = sentence['lat']
-                if sentence['lat_dir'] == 'S':
+                gps[utc]['latitude'] = sentence.lat
+                if sentence.lat_dir == 'S':
                     gps[utc]['latitude'] *= -1
 
-                gps[utc]['longitude'] = sentence['lon']
-                if sentence['lon_dir'] == 'W':
+                gps[utc]['longitude'] = sentence.lon
+                if sentence.lon_dir == 'W':
                     gps['longitude'] *= -1
 
-                gps[utc]['altitude'] = sentence['altitude']
+                gps[utc]['altitude'] = sentence.altitude
 
-                geoidal_separation = sentence['geo_sep']
+                try:
+                    geoidal_separation = float(sentence.geo_sep)
+                except ValueError:
+                    pass
 
             # Satellite reception data for precision estimate
             if data.startswith('$GPGSA'):
                 sentence = pynmea2.parse(data)
-                gps[utc]['precision'] = sentence['PDOP'] * geoidal_separation
+                try:
+                    gps[utc]['precision'] = float(sentence.pdop) * geoidal_separation
+                except TypeError:
+                    pass
+                        
 
                 # Filter entry without reception data
                 if gps[utc]['num_sats'] == 0:
