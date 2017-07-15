@@ -12,4 +12,4 @@ def bluetooth_read():
             print('X: ' + str(data_decoded[i + 1]))
             print('Y: ' + str(data_decoded[i]))
 
-print(bluetooth_read())
+bluetooth_read()
